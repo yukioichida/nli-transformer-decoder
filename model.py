@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import math
 import torch
 import torch.nn as nn
@@ -21,10 +23,11 @@ class PositionWiseFF(nn.Module):
 
 class Attention(nn.Module):
 
-    def __init__(self, word_dim, seq_len, dropout, scale_attentions=False):
+    def __init__(self, word_dim, seq_len, n_heads, dropout, scale_attentions=False):
         super(Attention, self).__init__()
         self.seq_len = seq_len
         self.word_dim = word_dim
+        self.n_heads = n_heads
         # Prevent to attend posterior words
         attention_mask = torch.tril((torch.ones(seq_len, seq_len))).view(1, 1, seq_len, seq_len)
         self.register_buffer("mask", attention_mask)
@@ -39,13 +42,13 @@ class Attention(nn.Module):
 
     def split_heads(self, x, permute=False):
         """
-
+            Creates a new axis for attention heads
         :param x: tensor [batch_size, seq_len, word_dim]
         :param permute: whether should reorder the result axis
         :return: tensor [batch_size, seq_len, number of attention heads, word_dim]
         """
         # Including the head quantity in dimension, reducing the word_dim which is x.size(-1)
-        new_x_shape = x.size()[:-1] + (self.n_head, x.size(-1) // self.n_head)
+        new_x_shape = x.size()[:-1] + (self.n_head, x.size(-1) // self.n_heads)
         x = x.view(*new_x_shape)
         # changing the shape of k to do matrix multiplication with q
         if permute:
@@ -94,10 +97,10 @@ class Attention(nn.Module):
         return self.output_dropout(attn)
 
 
-class Decoder(nn.Module):
+class DecoderBlock(nn.Module):
 
-    def __init__(self, seq_len, word_dim, dropout=0.1, scale=False):
-        super(Decoder, self).__init__()
+    def __init__(self, seq_len, word_dim, n_heads, dropout=0.1, scale=False):
+        super(DecoderBlock, self).__init__()
         self.attention = Attention(word_dim, seq_len, dropout, scale_attentions=scale)
         self.layerNorm1 = nn.LayerNorm(word_dim)
         self.ff = PositionWiseFF(word_dim, word_dim * 4, dropout)
@@ -118,27 +121,37 @@ class Decoder(nn.Module):
 
 class TransformerDecoder(nn.Module):
 
-    def __init__(self, vocab_size, max_seq_length, word_embedding_dim, n_layers, output_dim, dropout=0.1):
+    def __init__(self, vocab_size, max_seq_length, word_embedding_dim, n_layers, n_heads, output_dim,
+                 eos_token, dropout=0.1):
         super(TransformerDecoder, self).__init__()
         self.vocab_size = vocab_size
-        qtty_word_embedding = vocab_size + max_seq_length  # including positional encodings into word embedding matrix
+        # Including positional encodings into word embedding matrix and eos_token
+        qtty_word_embedding = vocab_size + max_seq_length + 1
         self.word_embedding_dim = word_embedding_dim
         self.embeddings = nn.Embedding(qtty_word_embedding, word_embedding_dim)
-        self.input_droput = nn.Dropout(dropout)
-        self.decoder_layers = [Decoder(max_seq_length, word_embedding_dim, dropout) for _ in range(n_layers)]
+        self.input_dropout = nn.Dropout(dropout)
+        self.decoder_layers = [DecoderBlock(max_seq_length, word_embedding_dim, dropout) for _ in range(n_layers)]
         self.output_layer = nn.Linear(word_embedding_dim, output_dim)
+        self.eos_token = eos_token
 
     def forward(self, x):
         """
-            OBS: the last axis informs whether is the word sequence (pos_index = 0) or is the position index(pos_index = 1)
+            OBS: the last axis informs whether is the word sequence (pos_index = 0)
+            or is the position index(pos_index = 1)
         :param x: tensor [batchsize, max_len, pos_index]
-        :return:
+        :return: tensor [batchsize, num_classes]
         """
         # x = x.view(-1, x.size(-2), x.size(-1)) # SNLI only have one input (concatenated p and h)
-        embeddings = self.embeddings(x) # [batchsize, max_len, pos_index, word_dim]
-        embeddings = self.input_droput(embeddings)
+        embeddings = self.embeddings(x)  # [batchsize, max_len, pos_index, word_dim]
+        embeddings = self.input_dropout(embeddings)
         hidden = embeddings.sum(dim=2)  # sum the last axes = word vectors + positional vectors
         for decoder in self.decoder_layers:
             hidden = decoder(hidden)
         hidden = hidden.view(-1, self.word_embedding_dim)
+        # get the original indexes of sentence ...
         hidden_flat = x[..., 0].contiguous().view(-1)
+        # ...and lookup the hidden state that is in the end of sentence token
+        last_hidden = hidden[hidden_flat == self.eos_token, :]
+        # With the hidden state of the last token, apply linear transformation
+        logits = self.output_layer(last_hidden)
+        return logits
