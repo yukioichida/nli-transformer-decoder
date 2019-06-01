@@ -8,7 +8,7 @@ BATCH_SIZE = 32
 
 QTTY_DECODER_BLOCK = 1
 ATTENTION_HEADS = 1
-WORD_DIM = 768  # Word embedding dimension
+WORD_DIM = 200  # Word embedding dimension
 
 MAX_EPOCH = 20
 

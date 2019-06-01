@@ -88,7 +88,7 @@ def process_function(engine, batch):
     x, y = batch.text[0], batch.label
     x = get_formatted_batch(x, POS_IDX_START, POS_IDX_END)
     y_pred = model(x)
-    loss = loss_function(y_pred, y)
+    loss = loss_function(y_pred, y.long())
     loss.backward()
     clip_grad_norm_(model.parameters(), 1.0)
     optimizer.step()

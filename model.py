@@ -10,7 +10,7 @@ class PositionWiseFF(nn.Module):
         super(PositionWiseFF, self).__init__()
         self.input_dim = word_dim
         self.hidden_dim = hidden_dim
-        self.activation = nn.ReLU
+        self.activation = nn.ReLU()
         self.ff_layer1 = nn.Linear(word_dim, hidden_dim)
         self.ff_layer2 = nn.Linear(hidden_dim, word_dim)
         self.dropout = nn.Dropout(dropout)
