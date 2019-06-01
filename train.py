@@ -78,6 +78,10 @@ def get_formatted_batch(batch_matrix, first_idx, last_idx):
         i += 1
     return formatted_batch
 
+def predict(batch):
+    x, y = batch.text[0], batch.label
+    x = get_formatted_batch(x, POS_IDX_START, POS_IDX_END)
+    return model(x), y
 
 def process_function(engine, batch):
     '''
@@ -85,9 +89,7 @@ def process_function(engine, batch):
     '''
     model.train()
     optimizer.zero_grad()
-    x, y = batch.text[0], batch.label
-    x = get_formatted_batch(x, POS_IDX_START, POS_IDX_END)
-    y_pred = model(x)
+    y_pred, y = predict(batch)
     loss = loss_function(y_pred, y.long())
     loss.backward()
     clip_grad_norm_(model.parameters(), 1.0)
@@ -98,8 +100,7 @@ def process_function(engine, batch):
 def eval_function(engine, batch):
     model.eval()
     with torch.no_grad():
-        x, y = batch.text[0], batch.label
-        y_pred = model(x)
+        y_pred, y = predict(batch)
         return y_pred, y
 
 
@@ -149,9 +150,8 @@ def evaluate(iterator):
 
     with torch.no_grad():
         for batch in iterator:
-            text = batch.text[0]
-            predictions = model(text)
-            loss = loss_function(predictions, batch.label)
+            predictions, y = predict(batch)
+            loss = loss_function(predictions, y.long())
             epoch_loss += loss.item()
     print('epoch_loss {}'.format(epoch_loss))
     print('number of elements: {}'.format(len(iterator)))
