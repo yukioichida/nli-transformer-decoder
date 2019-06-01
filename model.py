@@ -30,11 +30,11 @@ class Attention(nn.Module):
         self.n_heads = n_heads
         # Prevent to attend posterior words
         attention_mask = torch.tril((torch.ones(seq_len, seq_len))).view(1, 1, seq_len, seq_len)
-        self.register_buffer("mask", attention_mask)
+        self.register_buffer("attention_mask", attention_mask)
         # Scale the attention if needed
         self.scale_attentions = scale_attentions
         # Convolves the input matrix in order to generate a greater matrix enough to split in 3 sub matrix : Q,K,V
-        self.conv = nn.Conv1d(word_dim, word_dim * 3)
+        self.linear = nn.Linear(word_dim, word_dim * 3)
         self.softmax = nn.Softmax(dim=-1)
         self.attn_dropout = nn.Dropout(dropout)
         self.attn_output_layer = nn.Linear(word_dim, word_dim)
@@ -48,7 +48,7 @@ class Attention(nn.Module):
         :return: tensor [batch_size, seq_len, number of attention heads, word_dim]
         """
         # Including the head quantity in dimension, reducing the word_dim which is x.size(-1)
-        new_x_shape = x.size()[:-1] + (self.n_head, x.size(-1) // self.n_heads)
+        new_x_shape = x.size()[:-1] + (self.n_heads, x.size(-1) // self.n_heads)
         x = x.view(*new_x_shape)
         # changing the shape of k to do matrix multiplication with q
         if permute:
@@ -72,18 +72,19 @@ class Attention(nn.Module):
         if self.scale_attentions:
             attn = attn / math.sqrt(v.size(-1))
         # adjust shape of the mask to fit into the input shape
-        mask = self.attention_mask[:, :, attn.size(-2), attn.size(-1)]
+        mask = self.attention_mask[:, :, :attn.size(-2), :attn.size(-1)]
         # remove attention to subsequent position
         attn = attn * mask
         # put -infinity into paddings in order to softmax ignore it
         negative_infinity = -1e9
         attn = attn + negative_infinity * (1 - attn)
         attn = self.softmax(attn)
-        return self.attn_dropout(attn)
+        attn = self.attn_dropout(attn)
+        return torch.matmul(attn, v)
 
     def forward(self, x):
         # Triplicate the third axis (word dim)
-        x = self.conv(x)
+        x = self.linear(x)
         # Split in the third axis, which is the word dimension
         query, key, value = x.split(self.word_dim, dim=2)
         query = self.split_heads(query)
@@ -101,7 +102,7 @@ class DecoderBlock(nn.Module):
 
     def __init__(self, seq_len, word_dim, n_heads, dropout=0.1, scale=False):
         super(DecoderBlock, self).__init__()
-        self.attention = Attention(word_dim, seq_len, dropout, scale_attentions=scale)
+        self.attention = Attention(word_dim, seq_len, n_heads, dropout, scale_attentions=scale)
         self.layerNorm1 = nn.LayerNorm(word_dim)
         self.ff = PositionWiseFF(word_dim, word_dim * 4, dropout)
         self.layerNorm2 = nn.LayerNorm(word_dim)
@@ -130,7 +131,8 @@ class TransformerDecoder(nn.Module):
         self.word_embedding_dim = word_embedding_dim
         self.embeddings = nn.Embedding(qtty_word_embedding, word_embedding_dim)
         self.input_dropout = nn.Dropout(dropout)
-        self.decoder_layers = [DecoderBlock(max_seq_length, word_embedding_dim, dropout) for _ in range(n_layers)]
+        self.decoder_layers = nn.ModuleList([DecoderBlock(max_seq_length, word_embedding_dim, n_heads, dropout)
+                                             for _ in range(n_layers)])
         self.output_layer = nn.Linear(word_embedding_dim, output_dim)
         self.eos_token = eos_token
 

@@ -23,7 +23,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 logger.info("Loading IMDB dataset...")
 
-sentence_field = data.Field(include_lengths=True, fix_length=MAX_SEQ_SIZE, batch_first=True)
+sentence_field = data.Field(include_lengths=True, fix_length=MAX_SEQ_SIZE, batch_first=True, eos_token="<eos>")
 label_field = data.LabelField(dtype=torch.int32)
 
 train_data, test_data = datasets.IMDB.splits(sentence_field, label_field)
@@ -42,11 +42,18 @@ train_iter, valid_iter, test_iter = data.BucketIterator.splits((train_data, vali
 vocab_size = len(sentence_field.vocab)
 output_size = len(label_field.vocab)
 
+eos_vocab_index = sentence_field.vocab.stoi['<eos>']
+
+EOS_INDEX = vocab_size  # Index of END OF SENTENCE token in embedding matrix
+POS_IDX_START = EOS_INDEX + 1  # First index of position encoding in embedding matrix
+POS_IDX_END = MAX_SEQ_SIZE + POS_IDX_START  # Last index of position encoding
+
 logger.info('vocab size: {}'.format(vocab_size))
 logger.info('Number of classes: {}'.format(output_size))
 model = TransformerDecoder(vocab_size, MAX_SEQ_SIZE, WORD_DIM,
                            n_layers=QTTY_DECODER_BLOCK, n_heads=ATTENTION_HEADS,
-                           output_dim=output_size, eos_token=EOS_INDEX).to(device)
+                           output_dim=output_size, eos_token=eos_vocab_index)
+model = model.to(device)
 
 learnable_params = filter(lambda param: param.requires_grad, model.parameters())
 optimizer = optim.Adam(learnable_params)
@@ -63,11 +70,11 @@ def get_formatted_batch(batch_matrix, first_idx, last_idx):
     :return: tensor [batch_size, sequence_length, word or position index]
     """
     new_shape = (batch_matrix.size(0), batch_matrix.size(1), 2)
-    formatted_batch = torch.zeros(new_shape, dtype=torch.int32)
+    formatted_batch = torch.zeros(new_shape, dtype=torch.int64, device=device)
     i = 0
     for element in batch_matrix:
         formatted_batch[i, :, 0] = element  # Word indexes
-        formatted_batch[i, :, 1] = torch.arange(first_idx, last_idx)  # Positional indexes
+        formatted_batch[i, :, 1] = torch.arange(first_idx, last_idx, device=device)  # Positional indexes
         i += 1
     return formatted_batch
 
@@ -79,6 +86,7 @@ def process_function(engine, batch):
     model.train()
     optimizer.zero_grad()
     x, y = batch.text[0], batch.label
+    x = get_formatted_batch(x, POS_IDX_START, POS_IDX_END)
     y_pred = model(x)
     loss = loss_function(y_pred, y)
     loss.backward()
