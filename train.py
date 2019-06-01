@@ -103,13 +103,20 @@ def eval_function(engine, batch):
         y_pred, y = predict(batch)
         return y_pred, y.long()
 
+def thresholded_output_transform(output):
+    y_pred, y = output
+    y_pred = torch.round(y_pred)
+    return y_pred, y
+
 
 trainer = Engine(process_function)
 train_evaluator = Engine(eval_function)
 validator_evaluator = Engine(eval_function)
 
 RunningAverage(output_transform=lambda x: x).attach(trainer, 'loss')
+Accuracy(output_transform=thresholded_output_transform).attach(train_evaluator, 'accuracy')
 Loss(loss_function).attach(train_evaluator, 'loss_train')  # cross entropy
+Accuracy(output_transform=thresholded_output_transform).attach(validator_evaluator, 'accuracy')
 Loss(loss_function).attach(validator_evaluator, 'loss_val')
 pbar = ProgressBar(persist=True, bar_format="")
 pbar.attach(trainer, ['loss'])
