@@ -101,7 +101,7 @@ def eval_function(engine, batch):
     model.eval()
     with torch.no_grad():
         y_pred, y = predict(batch)
-        return y_pred, y
+        return y_pred, y.long()
 
 
 trainer = Engine(process_function)
