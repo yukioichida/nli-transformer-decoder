@@ -4,18 +4,25 @@ import math
 import torch
 import torch.nn as nn
 
+
 def gelu(x):
     return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
+
 
 class PositionWiseFF(nn.Module):
     def __init__(self, word_dim, hidden_dim, dropout):
         super(PositionWiseFF, self).__init__()
         self.input_dim = word_dim
         self.hidden_dim = hidden_dim
-        #self.activation = gelu
         self.ff_layer1 = nn.Linear(word_dim, hidden_dim)
         self.ff_layer2 = nn.Linear(hidden_dim, word_dim)
         self.dropout = nn.Dropout(dropout)
+
+        nn.init.normal_(self.ff_layer1.weight, std=0.02)
+        nn.init.normal_(self.ff_layer1.bias, 0)
+
+        nn.init.normal_(self.ff_layer2.weight, std=0.02)
+        nn.init.normal_(self.ff_layer2.bias, 0)
 
     def forward(self, x):
         hidden = gelu(self.ff_layer1(x))
@@ -154,6 +161,7 @@ class TransformerDecoder(nn.Module):
         hidden = embeddings.sum(dim=2)  # sum the last axes = word vectors + positional vectors
         for decoder in self.decoder_layers:
             hidden = decoder(hidden)
+        # Put all hidden states into a single vector
         hidden = hidden.view(-1, self.word_embedding_dim)
         # get the original indexes of sentence ...
         hidden_flat = x[..., 0].contiguous().view(-1)
