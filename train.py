@@ -23,17 +23,13 @@ torch.cuda.manual_seed(SEED)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-logger.info("Loading IMDB dataset...")
+logger.info("Loading SST dataset...")
 
 sentence_field = data.Field(include_lengths=True, fix_length=MAX_SEQ_SIZE, batch_first=True, eos_token="<eos>")
 label_field = data.LabelField(dtype=torch.int32)
 
-train_data, test_data = datasets.IMDB.splits(sentence_field, label_field)
+train_data, valid_data, test_data = datasets.SST.splits(sentence_field, label_field)
 train_size = len(train_data)
-train_data, valid_data = train_data.split(split_ratio=0.8, random_state=random.seed(SEED))
-
-sentence_field.build_vocab(train_data, max_size=MAX_VOCAB_SIZE)
-label_field.build_vocab(train_data)
 
 sentence_field.build_vocab(train_data, max_size=MAX_VOCAB_SIZE)
 label_field.build_vocab(train_data)
