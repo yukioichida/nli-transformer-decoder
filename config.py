@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-MAX_SEQ_SIZE = 100
-MAX_VOCAB_SIZE = 25000
+MAX_SEQ_SIZE = 200
+MAX_VOCAB_SIZE = 75000
 BATCH_SIZE = 16
 
 
 
 QTTY_DECODER_BLOCK = 1
 ATTENTION_HEADS = 1
-WORD_DIM = 200  # Word embedding dimension
+WORD_DIM = 100  # Word embedding dimension
 
 MAX_EPOCH = 20
 

@@ -4,26 +4,28 @@ import math
 import torch
 import torch.nn as nn
 
+def gelu(x):
+    return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
 
 class PositionWiseFF(nn.Module):
     def __init__(self, word_dim, hidden_dim, dropout):
         super(PositionWiseFF, self).__init__()
         self.input_dim = word_dim
         self.hidden_dim = hidden_dim
-        self.activation = nn.ReLU()
+        #self.activation = gelu
         self.ff_layer1 = nn.Linear(word_dim, hidden_dim)
         self.ff_layer2 = nn.Linear(hidden_dim, word_dim)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        hidden = self.activation(self.ff_layer1(x))
+        hidden = gelu(self.ff_layer1(x))
         hidden = self.ff_layer2(hidden)
         return self.dropout(hidden)
 
 
 class Attention(nn.Module):
 
-    def __init__(self, word_dim, seq_len, n_heads, dropout, scale_attentions=False):
+    def __init__(self, word_dim, seq_len, n_heads, dropout, scale_attentions=True):
         super(Attention, self).__init__()
         self.seq_len = seq_len
         self.word_dim = word_dim
@@ -135,6 +137,9 @@ class TransformerDecoder(nn.Module):
                                              for _ in range(n_layers)])
         self.output_layer = nn.Linear(word_embedding_dim, output_dim)
         self.eos_token = eos_token
+
+        nn.init.normal_(self.output_layer.weight, std=0.02)
+        nn.init.normal_(self.output_layer.bias, 0)
 
     def forward(self, x):
         """
