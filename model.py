@@ -109,9 +109,9 @@ class Attention(nn.Module):
 
 class DecoderBlock(nn.Module):
 
-    def __init__(self, seq_len, word_dim, n_heads, dropout=0.1, scale=False):
+    def __init__(self, seq_len, word_dim, n_heads, dropout=0.1):
         super(DecoderBlock, self).__init__()
-        self.attention = Attention(word_dim, seq_len, n_heads, dropout, scale_attentions=scale)
+        self.attention = Attention(word_dim, seq_len, n_heads, dropout)
         self.layerNorm1 = nn.LayerNorm(word_dim)
         self.ff = PositionWiseFF(word_dim, word_dim * 4, dropout)
         self.layerNorm2 = nn.LayerNorm(word_dim)
