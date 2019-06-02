@@ -4,6 +4,7 @@ import random
 import torch
 import torch.optim as optim
 import torch.nn as nn
+import torch.nn.functional as F
 from torchtext import data
 from torchtext import datasets
 from config import *
@@ -29,7 +30,7 @@ sentence_field = data.Field(include_lengths=True, fix_length=MAX_SEQ_SIZE, batch
 label_field = data.LabelField(dtype=torch.int32, sequential=False)
 
 train_data, valid_data, test_data = datasets.SST.splits(
-    sentence_field, label_field, fine_grained=True, train_subtrees=True,
+    sentence_field, label_field, fine_grained=False, train_subtrees=False,
     filter_pred=lambda ex: ex.label != 'neutral')
 
 train_size = len(train_data)
@@ -47,8 +48,7 @@ output_size = len(label_field.vocab)
 
 eos_vocab_index = sentence_field.vocab.stoi['<eos>']
 
-#EOS_INDEX = vocab_size  # Index of END OF SENTENCE token in embedding matrix
-POS_IDX_START = vocab_size + 1  # First index of position encoding in embedding matrix
+POS_IDX_START = vocab_size  # First index of position encoding in embedding matrix
 POS_IDX_END = MAX_SEQ_SIZE + POS_IDX_START  # Last index of position encoding
 
 logger.info('vocab size: {}'.format(vocab_size))
@@ -58,12 +58,9 @@ model = TransformerDecoder(vocab_size, MAX_SEQ_SIZE, WORD_DIM,
                            output_dim=output_size, eos_token=eos_vocab_index)
 model = model.to(device)
 
-#learnable_params = filter(lambda param: param.requires_grad, model.parameters())
-#(n_train // n_batch_train) * args.n_iter
 nr_optimizer_update = (train_size // BATCH_SIZE) * MAX_EPOCH
 optimizer = OpenAIAdam(model.parameters(), nr_optimizer_update)
 loss_function = torch.nn.CrossEntropyLoss()
-#loss_function = torch.nn.NLLLoss()
 loss_function = loss_function.to(device)
 
 
@@ -84,11 +81,13 @@ def get_formatted_batch(batch_matrix, first_idx, last_idx):
         i += 1
     return formatted_batch
 
+
 def predict(batch):
     x, y = batch.text[0], batch.label
     x = get_formatted_batch(x, POS_IDX_START, POS_IDX_END)
     y_pred = model(x)
     return y_pred, y
+
 
 def process_function(engine, batch):
     '''
@@ -97,22 +96,23 @@ def process_function(engine, batch):
     model.train()
     optimizer.zero_grad()
     y_pred, y = predict(batch)
-    loss = loss_function(y_pred, y.long())
+    loss = F.cross_entropy(y_pred, y.long())
     loss.backward()
-    #clip_grad_norm_(model.parameters(), 1.0)
+    # clip_grad_norm_(model.parameters(), 1.0)
     optimizer.step()
     return loss.item()
 
 
 def eval_function(engine, batch):
-    model.eval()
     with torch.no_grad():
+        model.eval()
         y_pred, y = predict(batch)
         return y_pred, y.long()
 
+
 def thresholded_output_transform(output):
     y_pred, y = output
-    y_pred = torch.round(y_pred)
+    y_pred = y_pred.argmax(1)
     return y_pred, y
 
 
@@ -138,6 +138,7 @@ def log_training_results(engine):
     pbar.log_message(
         "Training Results - Epoch: {}  Avg accuracy: {:.4f} Avg loss: {:.4f}"
             .format(engine.state.epoch, avg_accuracy, avg_loss))
+
 
 def log_validation_results(engine):
     validator_evaluator.run(valid_iter)
@@ -173,4 +174,4 @@ def evaluate(iterator):
 
 test_loss = evaluate(test_iter)
 
-print("Test Loss: %04fgit d" % test_loss)
+print("Test Loss: %04f" % test_loss)

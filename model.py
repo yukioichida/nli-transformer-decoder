@@ -44,7 +44,6 @@ class Attention(nn.Module):
         self.scale_attentions = scale_attentions
         # Convolves the input matrix in order to generate a greater matrix enough to split in 3 sub matrix : Q,K,V
         self.linear = nn.Linear(word_dim, word_dim * 3)
-        self.softmax = nn.Softmax(dim=-1)
         self.attn_dropout = nn.Dropout(dropout)
         self.attn_output_layer = nn.Linear(word_dim, word_dim)
         self.output_dropout = nn.Dropout(dropout)
@@ -83,11 +82,12 @@ class Attention(nn.Module):
         # adjust shape of the mask to fit into the input shape
         mask = self.attention_mask[:, :, :attn.size(-2), :attn.size(-1)]
         # remove attention to subsequent position
-        attn = attn * mask
+        #attn = attn * mask
         # put -infinity into paddings in order to softmax ignore it
-        negative_infinity = -1e9
-        attn = attn + negative_infinity * (1 - attn)
-        attn = self.softmax(attn)
+        #negative_infinity = -1e9
+        #attn = attn + negative_infinity * (1 - attn)
+        attn = attn * mask + -1e9 * (1 - mask)
+        attn = nn.Softmax(dim=-1)(attn)
         attn = self.attn_dropout(attn)
         return torch.matmul(attn, v)
 
@@ -136,7 +136,7 @@ class TransformerDecoder(nn.Module):
         super(TransformerDecoder, self).__init__()
         self.vocab_size = vocab_size
         # Including positional encodings into word embedding matrix and eos_token
-        qtty_word_embedding = vocab_size + max_seq_length + 1
+        qtty_word_embedding = vocab_size + max_seq_length
         self.word_embedding_dim = word_embedding_dim
         self.embeddings = nn.Embedding(qtty_word_embedding, word_embedding_dim)
         self.input_dropout = nn.Dropout(dropout)
