@@ -26,10 +26,14 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logger.info("Loading SST dataset...")
 
 sentence_field = data.Field(include_lengths=True, fix_length=MAX_SEQ_SIZE, batch_first=True, eos_token="<eos>")
-label_field = data.LabelField(dtype=torch.int32)
+label_field = data.LabelField(dtype=torch.int32, sequential=False)
 
-train_data, valid_data, test_data = datasets.SST.splits(sentence_field, label_field)
+train_data, valid_data, test_data = datasets.SST.splits(
+    sentence_field, label_field, fine_grained=True, train_subtrees=True,
+    filter_pred=lambda ex: ex.label != 'neutral')
+
 train_size = len(train_data)
+logger.info('Number of train dataset: {}'.format(train_size))
 
 sentence_field.build_vocab(train_data, max_size=MAX_VOCAB_SIZE)
 label_field.build_vocab(train_data)
@@ -83,7 +87,8 @@ def get_formatted_batch(batch_matrix, first_idx, last_idx):
 def predict(batch):
     x, y = batch.text[0], batch.label
     x = get_formatted_batch(x, POS_IDX_START, POS_IDX_END)
-    return model(x), y
+    y_pred = model(x)
+    return y_pred, y
 
 def process_function(engine, batch):
     '''
@@ -140,7 +145,7 @@ def log_validation_results(engine):
     avg_accuracy = metrics['accuracy']
     avg_val_loss = metrics['loss_val']
     pbar.log_message(
-        "Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}"
+        "Validation Results - Epoch: {}  Avg accuracy: {:.4f} Avg loss: {:.4f}"
             .format(engine.state.epoch, avg_accuracy, avg_val_loss))
     pbar.n = pbar.last_print_n = 0
 
