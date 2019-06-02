@@ -9,10 +9,11 @@ from torchtext import datasets
 from config import *
 from log import logger
 from model import TransformerDecoder
+from custom_optimizers import OpenAIAdam
 
 from torch.nn.utils import clip_grad_norm_
 from ignite.contrib.handlers import ProgressBar
-from ignite.engine import Engine, Events, create_supervised_trainer, create_supervised_evaluator
+from ignite.engine import Engine, Events
 
 from ignite.metrics import Accuracy, Loss, RunningAverage
 
@@ -28,6 +29,7 @@ sentence_field = data.Field(include_lengths=True, fix_length=MAX_SEQ_SIZE, batch
 label_field = data.LabelField(dtype=torch.int32)
 
 train_data, test_data = datasets.IMDB.splits(sentence_field, label_field)
+train_size = len(train_data)
 train_data, valid_data = train_data.split(split_ratio=0.8, random_state=random.seed(SEED))
 
 sentence_field.build_vocab(train_data, max_size=MAX_VOCAB_SIZE)
@@ -57,7 +59,9 @@ model = TransformerDecoder(vocab_size, MAX_SEQ_SIZE, WORD_DIM,
 model = model.to(device)
 
 #learnable_params = filter(lambda param: param.requires_grad, model.parameters())
-optimizer = optim.Adam(model.parameters())
+#(n_train // n_batch_train) * args.n_iter
+nr_optimizer_update = (train_size // BATCH_SIZE) * MAX_EPOCH
+optimizer = OpenAIAdam(model.parameters(), nr_optimizer_update)
 loss_function = torch.nn.CrossEntropyLoss()
 #loss_function = torch.nn.NLLLoss()
 loss_function = loss_function.to(device)
