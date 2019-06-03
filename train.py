@@ -30,7 +30,7 @@ sentence_field = data.Field(include_lengths=True, fix_length=MAX_SEQ_SIZE, batch
 label_field = data.LabelField(dtype=torch.int32, sequential=False)
 
 train_data, valid_data, test_data = datasets.SST.splits(
-    sentence_field, label_field, fine_grained=False, train_subtrees=False,
+    sentence_field, label_field, fine_grained=False, train_subtrees=True,
     filter_pred=lambda ex: ex.label != 'neutral')
 
 train_size = len(train_data)
@@ -54,7 +54,7 @@ POS_IDX_END = MAX_SEQ_SIZE + POS_IDX_START  # Last index of position encoding
 logger.info('vocab size: {}'.format(vocab_size))
 logger.info('Number of classes: {}'.format(output_size))
 model = TransformerDecoder(vocab_size, MAX_SEQ_SIZE, WORD_DIM,
-                           n_layers=QTTY_DECODER_BLOCK, n_heads=ATTENTION_HEADS,
+                           n_layers=QTTY_DECODER_BLOCK, n_heads=ATTENTION_HEADS, dropout=DROPOUT,
                            output_dim=output_size, eos_token=eos_vocab_index)
 model = model.to(device)
 
@@ -145,9 +145,10 @@ def log_validation_results(engine):
     metrics = validator_evaluator.state.metrics
     avg_accuracy = metrics['accuracy']
     avg_val_loss = metrics['loss_val']
-    pbar.log_message(
-        "Validation Results - Epoch: {}  Avg accuracy: {:.4f} Avg loss: {:.4f}"
-            .format(engine.state.epoch, avg_accuracy, avg_val_loss))
+    message = "Validation Results - Epoch: {}  Avg accuracy: {:.4f} Avg loss: {:.4f}" \
+        .format(engine.state.epoch, avg_accuracy, avg_val_loss)
+    pbar.log_message(message)
+    logger.info(message)
     pbar.n = pbar.last_print_n = 0
 
 
