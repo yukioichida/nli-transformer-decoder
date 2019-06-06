@@ -9,14 +9,4 @@ QTTY_DECODER_BLOCK = 1
 ATTENTION_HEADS = 1
 WORD_DIM = 300  # Word embedding dimension
 
-
 DROPOUT = 0.1
-
-data = {
-    "president": {
-        "name": "Zaphod Beeblebrox",
-        "species": "Betelgeusian"
-    }
-}
-
-print(data["president"])
