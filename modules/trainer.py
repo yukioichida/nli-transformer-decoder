@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from modules.log import logger
 from ignite.contrib.handlers import ProgressBar
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import Accuracy, Loss
@@ -30,7 +29,7 @@ class Trainer:
         self.logger = logger
 
     def train(self, train_iterator, val_iterator, test_iterator):
-        logger.info("Start train")
+        self.logger.info("Start train")
         if self.use_progress_bar:
             pbar = ProgressBar(persist=True, bar_format="")
             pbar.attach(self.trainer)
