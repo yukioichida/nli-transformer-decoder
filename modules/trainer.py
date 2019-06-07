@@ -29,7 +29,6 @@ class Trainer:
         self.logger = logger
 
     def train(self, train_iterator, val_iterator, test_iterator):
-        self.logger.info("Start train")
         if self.use_progress_bar:
             pbar = ProgressBar(persist=True, bar_format="")
             pbar.attach(self.trainer)

@@ -14,6 +14,7 @@ from modules.log import get_logger
 def run_train(train_id):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger = get_logger(train_id)
+    logger.info("Start Training {} ...".format(train_id))
     preprocess = SSTPreProcess(device, logger)
     train_iter, val_iter, test_iter = preprocess.build_iterators()
     vocab = preprocess.sentence_field.vocab
@@ -29,20 +30,20 @@ def run_train(train_id):
     optimizer = OpenAIAdam(model.parameters(), nr_optimizer_update)
     loss_function = F.cross_entropy
 
-    logger.info(log_train_summary(train_id))
+    logger.info(log_train_summary())
 
     trainer = Trainer(model=model, optimizer=optimizer, loss_function=loss_function,
                       prepare_batch_fn=prepare_batch_fn, device=device, logger=logger)
     trainer.train(train_iter, val_iter, test_iter)
 
 
-def log_train_summary(self, identifier):
+def log_train_summary():
     """
 
     :return: String with training hyperparameters
     """
 
-    return """ Start training {}:
+    return """ 
         Max Sequence Size: {}
         Batch Size: {}
         Epochs: {}
@@ -50,12 +51,12 @@ def log_train_summary(self, identifier):
         Attention Heads: {}
         Word Dimension (model dimension): {}
         Model Dropout: {}
-    """.format(identifier, MAX_SEQ_SIZE, BATCH_SIZE, MAX_EPOCH, QTTY_DECODER_BLOCK,
+    """.format(MAX_SEQ_SIZE, BATCH_SIZE, MAX_EPOCH, QTTY_DECODER_BLOCK,
                ATTENTION_HEADS, WORD_DIM, DROPOUT)
 
 
 if __name__ == '__main__':
-    identifier = "default"
+    identifier = "train"
     if len(sys.argv) == 2:
         identifier = sys.argv[1]
     run_train(identifier)

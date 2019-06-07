@@ -13,3 +13,4 @@ def get_logger(identifier):
     logger.addHandler(hdlr)
     logger.addHandler(console_log)
     logger.setLevel(logging.INFO)
+    return logger
