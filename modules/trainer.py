@@ -54,10 +54,14 @@ class Trainer:
         @self.trainer.on(Events.COMPLETED)
         def log_test_results(engine):
             self.evaluator.run(test_iterator)
-            metrics = self.evaluator.state.metrics
-            avg_accuracy = metrics['accuracy']
-            avg_loss = metrics['loss']
-            self.logger.info("Validation Results - Epoch: {}  Avg accuracy: {:.4f} Avg loss: {:.4f}"
-                             .format(engine.state.epoch, avg_accuracy, avg_loss))
+            self.log_output_summary(self.evaluator.state.metrics)
 
         self.trainer.run(train_iterator, max_epochs=MAX_EPOCH)
+
+    def log_output_summary(self, metrics):
+        message = """
+            TRAINING RESULT - TEST SET
+            - Avg Accuracy: {}
+            - Avg Loss: {}
+        """.format(metrics['accuracy'], metrics['loss'])
+        self.logger.info(message)
