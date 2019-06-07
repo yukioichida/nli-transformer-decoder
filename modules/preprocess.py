@@ -4,29 +4,29 @@ import torch
 from torchtext import data
 from torchtext import datasets
 
-from config import *
-from log import logger
+from modules.config import *
 
 
 class SSTPreProcess:
 
-    def __init__(self, device):
+    def __init__(self, device, logger):
         self.device = device
+        self.logger = logger
         self.sentence_field = data.Field(include_lengths=True, fix_length=MAX_SEQ_SIZE, batch_first=True,
                                          eos_token="<eos>", lower=True)
         self.label_field = data.LabelField(dtype=torch.int32, sequential=False)
-
-        self.train_data, self.val_data, self.test_data = datasets.SST.splits(
-            self.sentence_field, self.label_field, fine_grained=False, train_subtrees=True,
-            filter_pred=lambda ex: ex.label != 'neutral')
+        self.train_data, self.val_data, self.test_data = datasets.SST.splits(self.sentence_field, self.label_field,
+                                                                             fine_grained=False, train_subtrees=True,
+                                                                             filter_pred=lambda
+                                                                                 ex: ex.label != 'neutral')
 
     def build_iterators(self):
         self.sentence_field.build_vocab(self.train_data, max_size=MAX_VOCAB_SIZE)
         self.label_field.build_vocab(self.train_data)
-        logger.info('Number of train/val/test dataset: {}/{}/{}'.format(len(self.train_data),
-                                                                        len(self.val_data),
-                                                                        len(self.test_data)))
-        logger.info('Vocabulary size: {}'.format(len(self.sentence_field.vocab)))
+        self.logger.info('Number of train/val/test dataset: {}/{}/{}'.format(len(self.train_data),
+                                                                             len(self.val_data),
+                                                                             len(self.test_data)))
+        self.logger.info('Vocabulary size: {}'.format(len(self.sentence_field.vocab)))
 
         train_iter, valid_iter, test_iter = data.BucketIterator.splits((self.train_data, self.val_data, self.test_data),
                                                                        batch_size=BATCH_SIZE, device=self.device,
@@ -36,7 +36,8 @@ class SSTPreProcess:
 
     def include_positional_encoding(self, batch, device, non_blocking=False):
         """
-        Include a new axis to inform whether the sequence represents the words or the positions
+        Include a new axis to inform whether the sequence represents the words or the positions.
+
         :param batch_matrix: tensor[batch_size, sequence_length]
         :return: tensor [batch_size, sequence_length, (word or position index)]
         """
