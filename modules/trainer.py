@@ -54,10 +54,8 @@ class Trainer:
         self.trainer.run(train_iterator, max_epochs=MAX_EPOCH)
 
     def log_output_summary(self, metrics):
-        message = """
-            TRAINING RESULT - TEST SET
+        message = """TRAINING RESULT - TEST SET
             - Avg Accuracy: {:.4f}
             - Avg Loss: {:.4f}
-            - Best Avg Accuracy: {:.4f}
         """.format(metrics['accuracy'], metrics['loss'])
         self.logger.info(message)
