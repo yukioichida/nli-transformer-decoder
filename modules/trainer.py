@@ -20,6 +20,7 @@ class Trainer:
         """
         self.trainer = create_supervised_trainer(model, optimizer, loss_function, device,
                                                  prepare_batch=prepare_batch_fn)
+
         self.evaluator = create_supervised_evaluator(model,
                                                      metrics={"accuracy": Accuracy(), "loss": Loss(loss_function)},
                                                      device=device, prepare_batch=prepare_batch_fn)
@@ -35,21 +36,15 @@ class Trainer:
 
         @self.trainer.on(Events.EPOCH_COMPLETED)
         def log_training_results(engine):
-            self.evaluator.run(train_iterator)
-            metrics = self.evaluator.state.metrics
-            avg_accuracy = metrics['accuracy']
-            avg_loss = metrics['loss']
-            self.logger.info("Training Results - Epoch: {}  Avg accuracy: {:.4f} Avg loss: {:.4f}"
-                             .format(engine.state.epoch, avg_accuracy, avg_loss))
+            train_state = self.evaluator.run(train_iterator)
+            val_state = self.evaluator.run(val_iterator)
+            train_metrics = train_state.metrics
+            val_metrics = val_state.metrics
 
-        @self.trainer.on(Events.EPOCH_COMPLETED)
-        def log_validation_results(engine):
-            self.evaluator.run(val_iterator)
-            metrics = self.evaluator.state.metrics
-            avg_accuracy = metrics['accuracy']
-            avg_loss = metrics['loss']
-            self.logger.info("Validation Results - Epoch: {}  Avg accuracy: {:.4f} Avg loss: {:.4f}"
-                             .format(engine.state.epoch, avg_accuracy, avg_loss))
+            message = "Epoch: {}  Train[acc: {:.4f}, loss: {:.4f}] - Validation[acc: {:.4f}, loss: {:.4f}]." \
+                .format(engine.state.epoch, train_metrics['accuracy'], train_metrics['loss'],
+                        val_metrics['accuracy'], val_metrics['loss'])
+            self.logger.info(message)
 
         @self.trainer.on(Events.COMPLETED)
         def log_test_results(engine):
@@ -61,7 +56,8 @@ class Trainer:
     def log_output_summary(self, metrics):
         message = """
             TRAINING RESULT - TEST SET
-            - Avg Accuracy: {}
-            - Avg Loss: {}
+            - Avg Accuracy: {:.4f}
+            - Avg Loss: {:.4f}
+            - Best Avg Accuracy: {:.4f}
         """.format(metrics['accuracy'], metrics['loss'])
         self.logger.info(message)
