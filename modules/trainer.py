@@ -34,14 +34,20 @@ class Trainer:
             pbar = ProgressBar(persist=True, bar_format="")
             pbar.attach(self.trainer)
 
+        @self.trainer.on(Events.STARTED)
+        def start_callback(engine):
+            engine.state.best_acc = 0
+
         @self.trainer.on(Events.EPOCH_COMPLETED)
         def log_training_results(engine):
             train_state = self.evaluator.run(train_iterator)
             val_state = self.evaluator.run(val_iterator)
             train_metrics = train_state.metrics
             val_metrics = val_state.metrics
+            if engine.state.best_acc < val_metrics['accuracy']:
+                engine.state.best_acc = val_metrics['accuracy']
 
-            message = "Epoch: {}  Train[acc: {:.4f}, loss: {:.4f}] - Validation[acc: {:.4f}, loss: {:.4f}]." \
+            message = "Epoch: {}  Train[acc: {:.4f}, loss: {:.4f}] - Validation[acc: {:.4f}, loss: {:.4f}]" \
                 .format(engine.state.epoch, train_metrics['accuracy'], train_metrics['loss'],
                         val_metrics['accuracy'], val_metrics['loss'])
             self.logger.info(message)

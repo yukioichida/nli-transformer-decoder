@@ -3,7 +3,7 @@ import sys
 
 import torch
 import torch.nn.functional as F
-from modules.preprocess import SSTPreProcess
+from modules.preprocess import *
 from modules.trainer import Trainer
 from modules.config import *
 from modules.model import TransformerDecoder
@@ -15,10 +15,10 @@ def run_train(train_id):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger = get_logger(train_id)
     logger.info("Start Training {} ...".format(train_id))
-    preprocess = SSTPreProcess(device, logger)
+    preprocess = SNLIPreProcess(device, logger)
     train_iter, val_iter, test_iter = preprocess.build_iterators()
     vocab = preprocess.sentence_field.vocab
-    eos_vocab_index = vocab.stoi['<eos>']
+    eos_vocab_index = len(vocab)
     nr_classes = len(preprocess.label_field.vocab)
     # Function that prepares the input batch for the model train
     prepare_batch_fn = preprocess.include_positional_encoding
