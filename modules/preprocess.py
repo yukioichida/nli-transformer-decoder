@@ -56,7 +56,7 @@ class SNLIPreProcess:
         formatted_batch = torch.ones(new_shape, dtype=torch.int64, device=self.device)
         for idx in range(0, batch.batch_size):
             # [premise] + [hypothesis] + [eos token] TODO: test using another special token for prem-hyp separator
-            formatted_seq = torch.cat((premise[0][idx], hypothesis[0][idx], torch.tensor([eos])))
+            formatted_seq = torch.cat((premise[0][idx], hypothesis[0][idx], torch.tensor([eos], device=self.device)))
             formatted_batch[idx, :, 0] = formatted_seq  # Word indexes
             formatted_batch[idx, :, 1] = torch.arange(first_idx, last_idx, device=self.device)  # Positional indexes
         return formatted_batch, batch.label.long()
