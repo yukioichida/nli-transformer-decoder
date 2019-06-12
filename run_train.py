@@ -70,6 +70,6 @@ if __name__ == '__main__':
     print(cmd_args)
     train_id = '{}-{}blk-{}h-{}d'.format(cmd_args.dataset, cmd_args.n_blocks, cmd_args.n_heads,
                                          cmd_args.word_dim)
-    if not cmd_args.id:
+    if cmd_args.id:
         train_id = train_id + '-' + cmd_args.id
     run_train(cmd_args)
