@@ -29,7 +29,7 @@ class Trainer:
         self.use_progress_bar = use_progress_bar
         self.logger = logger
 
-    def train(self, train_iterator, val_iterator, test_iterator):
+    def train(self, train_iterator, val_iterator, test_iterator, epochs):
         if self.use_progress_bar:
             pbar = ProgressBar(persist=True, bar_format="")
             pbar.attach(self.trainer)
@@ -57,7 +57,7 @@ class Trainer:
             self.evaluator.run(test_iterator)
             self.log_output_summary(self.evaluator.state.metrics)
 
-        self.trainer.run(train_iterator, max_epochs=MAX_EPOCH)
+        self.trainer.run(train_iterator, max_epochs=epochs)
 
     def log_output_summary(self, metrics):
         message = """TRAINING RESULT - TEST SET

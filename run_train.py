@@ -33,7 +33,7 @@ def run_train(args):
 
     trainer = Trainer(model=model, optimizer=optimizer, loss_function=loss_function,
                       prepare_batch_fn=prepare_batch_fn, device=device, logger=logger)
-    trainer.train(train_iter, val_iter, test_iter)
+    trainer.train(train_iter, val_iter, test_iter, args.epochs)
 
 
 def log_train_summary(args):
@@ -68,7 +68,8 @@ if __name__ == '__main__':
 
     cmd_args = parser.parse_args()
     print(cmd_args)
+    train_id = '{}-{}blk-{}h-{}d'.format(cmd_args.dataset, cmd_args.n_blocks, cmd_args.n_heads,
+                                         cmd_args.word_dim)
     if not cmd_args.id:
-        cmd_args.id = '{}-{}blk-{}h-{}d'.format(cmd_args.dataset, cmd_args.n_blocks, cmd_args.n_heads,
-                                                cmd_args.word_dim)
+        train_id = train_id + '-' + cmd_args.id
     run_train(cmd_args)
