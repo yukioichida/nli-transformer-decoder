@@ -1,8 +1,10 @@
-export CUDA_VISIBLE_DEVICES=0
+#!/bin/bash
 
-n_heads = 1
-n_blocks = 1
-word_dim = 300
+export CUDA_VISIBLE_DEVICES=1
+
+n_heads=1
+n_blocks=1
+word_dim=300
 
 max_seq_size=150
 
