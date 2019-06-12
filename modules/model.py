@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import math
+import copy
 import torch
 import torch.nn as nn
 
@@ -19,10 +20,10 @@ class PositionWiseFF(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
         nn.init.normal_(self.ff_layer1.weight, std=0.02)
-        nn.init.normal_(self.ff_layer1.bias, 0)
+        nn.init.zeros_(self.ff_layer1.bias)
 
         nn.init.normal_(self.ff_layer2.weight, std=0.02)
-        nn.init.normal_(self.ff_layer2.bias, 0)
+        nn.init.zeros_(self.ff_layer2.bias)
 
     def forward(self, x):
         hidden = gelu(self.ff_layer1(x))
@@ -82,10 +83,10 @@ class Attention(nn.Module):
         # adjust shape of the mask to fit into the input shape
         mask = self.attention_mask[:, :, :attn.size(-2), :attn.size(-1)]
         # remove attention to subsequent position
-        #attn = attn * mask
+        # attn = attn * mask
         # put -infinity into paddings in order to softmax ignore it
-        #negative_infinity = -1e9
-        #attn = attn + negative_infinity * (1 - attn)
+        # negative_infinity = -1e9
+        # attn = attn + negative_infinity * (1 - attn)
         attn = attn * mask + -1e9 * (1 - mask)
         attn = nn.Softmax(dim=-1)(attn)
         attn = self.attn_dropout(attn)
@@ -131,18 +132,20 @@ class DecoderBlock(nn.Module):
 
 class TransformerDecoder(nn.Module):
 
-    def __init__(self, vocab_size, max_seq_length, word_embedding_dim, n_layers, n_heads, output_dim,
+    def __init__(self, vocab_size, max_seq_length, word_embedding_dim, n_blocks, n_heads, output_dim,
                  eos_token, dropout=0.1):
         super(TransformerDecoder, self).__init__()
-        self.vocab_size = vocab_size
         # Including positional encodings into word embedding matrix and eos_token
-        qtty_word_embedding = vocab_size + max_seq_length
+        qtty_word_embedding = vocab_size + max_seq_length + 1
         self.word_embedding_dim = word_embedding_dim
         self.embeddings = nn.Embedding(qtty_word_embedding, word_embedding_dim)
         self.input_dropout = nn.Dropout(dropout)
-        self.decoder_layers = nn.ModuleList([DecoderBlock(max_seq_length, word_embedding_dim, n_heads, dropout)
-                                             for _ in range(n_layers)])
+
+        base_block = DecoderBlock(max_seq_length, word_embedding_dim, n_heads, dropout)
+
+        self.decoder_layers = nn.ModuleList([copy.deepcopy(base_block) for _ in range(n_blocks)])
         self.output_layer = nn.Linear(word_embedding_dim, output_dim)
+        # Token used to represent the entire sentence
         self.eos_token = eos_token
 
         nn.init.normal_(self.output_layer.weight, std=0.02)

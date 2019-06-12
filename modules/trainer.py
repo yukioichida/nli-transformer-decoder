@@ -47,7 +47,7 @@ class Trainer:
             if engine.state.best_acc < val_metrics['accuracy']:
                 engine.state.best_acc = val_metrics['accuracy']
 
-            message = "Epoch: {}  Train[acc: {:.4f}, loss: {:.4f}] - Validation[acc: {:.4f}, loss: {:.4f}]" \
+            message = "Epoch: {}  Train[acc: {:.4f}, loss: {:.4f}] - Val[acc: {:.4f}, loss: {:.4f}]" \
                 .format(engine.state.epoch, train_metrics['accuracy'], train_metrics['loss'],
                         val_metrics['accuracy'], val_metrics['loss'])
             self.logger.info(message)

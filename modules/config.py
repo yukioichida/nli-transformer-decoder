@@ -5,7 +5,7 @@ max-seq-size:
 - 50 for sst
 - 80 for snli
 '''
-MAX_SEQ_SIZE = 80
+MAX_SEQ_SIZE = 200
 MAX_VOCAB_SIZE = 75000
 BATCH_SIZE = 32
 MAX_EPOCH = 5

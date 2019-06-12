@@ -4,8 +4,8 @@ import logging
 
 
 def get_logger(identifier):
-    logger = logging.getLogger('main-{}'.format(identifier))
-    hdlr = logging.FileHandler('logs/logfile-{}.log'.format(identifier))
+    logger = logging.getLogger(identifier)
+    hdlr = logging.FileHandler('logs/{}.log'.format(identifier))
     console_log = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
     hdlr.setFormatter(formatter)

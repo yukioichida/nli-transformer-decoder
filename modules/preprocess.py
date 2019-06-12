@@ -22,10 +22,10 @@ class SNLIPreProcess:
     def build_iterators(self):
         self.sentence_field.build_vocab(self.train_data, max_size=MAX_VOCAB_SIZE)
         self.label_field.build_vocab(self.train_data)
-        # self.logger.info('Number of train/val/test dataset: {}/{}/{}'.format(len(self.train_data),
-        #                                                                     len(self.val_data),
-        #                                                                     len(self.test_data)))
-        # self.logger.info('Vocabulary size: {}'.format(len(self.sentence_field.vocab)))
+        self.logger.info('Number of train/val/test dataset: {}/{}/{}'.format(len(self.train_data),
+                                                                             len(self.val_data),
+                                                                             len(self.test_data)))
+        self.logger.info('Vocabulary size: {}'.format(len(self.sentence_field.vocab)))
 
         return data.BucketIterator.splits((self.train_data, self.val_data, self.test_data),
                                           batch_size=BATCH_SIZE, device=self.device,
