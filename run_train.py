@@ -72,4 +72,4 @@ if __name__ == '__main__':
                                          cmd_args.word_dim)
     if cmd_args.id:
         train_id = train_id + '-' + cmd_args.id
-    run_train(cmd_args)
+    run_train(train_id)
