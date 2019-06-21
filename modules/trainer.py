@@ -22,9 +22,13 @@ class Trainer:
         self.trainer = create_supervised_trainer(model, optimizer, loss_function, device,
                                                  prepare_batch=prepare_batch_fn)
 
-        self.evaluator = create_supervised_evaluator(model,
+        self.train_evaluator = create_supervised_evaluator(model,
                                                      metrics={"accuracy": Accuracy(), "loss": Loss(loss_function)},
                                                      device=device, prepare_batch=prepare_batch_fn)
+        self.val_evaluator = create_supervised_evaluator(model,
+                                                           metrics={"accuracy": Accuracy(),
+                                                                    "loss": Loss(loss_function)},
+                                                           device=device, prepare_batch=prepare_batch_fn)
 
         self.model = model
         self.device = device
@@ -48,8 +52,8 @@ class Trainer:
 
         @self.trainer.on(Events.EPOCH_COMPLETED, self.model)
         def log_training_results(engine, model):
-            train_state = self.evaluator.run(train_iterator)
-            val_state = self.evaluator.run(val_iterator)
+            train_state = self.train_evaluatora.run(train_iterator)
+            val_state = self.val_evaluator.run(val_iterator)
             train_metrics = train_state.metrics
             val_metrics = val_state.metrics
 
@@ -66,8 +70,8 @@ class Trainer:
         checkpoint = ModelCheckpoint(dirname='saved_models/', filename_prefix=self.model_id, score_function=score_function,
                                      score_name='acc', n_saved=4, create_dir=True, save_as_state_dict=True)
         early_stop = EarlyStopping(patience=10, score_function=score_function, trainer=self.trainer)
-        self.evaluator.add_event_handler(Events.COMPLETED, early_stop)
-        self.evaluator.add_event_handler(Events.EPOCH_COMPLETED, checkpoint, {'model': self.model})
+        self.val_evaluator.add_event_handler(Events.COMPLETED, early_stop)
+        self.val_evaluator.add_event_handler(Events.EPOCH_COMPLETED, checkpoint, {'model': self.model})
         self.trainer.run(train_iterator, max_epochs=epochs)
 
     def log_output_summary(self, metrics, best_epoch):
