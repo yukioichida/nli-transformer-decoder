@@ -81,7 +81,7 @@ if __name__ == '__main__':
     cmd_args = parser.parse_args()
     print(cmd_args)
     train_id = '{}-{}blk-{}h-{}d-{}batch'.format(cmd_args.dataset, cmd_args.n_blocks, cmd_args.n_heads,
-                                         cmd_args.word_dim. cmd_args.batch_size)
+                                         cmd_args.word_dim, cmd_args.batch_size)
     if cmd_args.id:
         train_id = train_id + '-' + cmd_args.id
     cmd_args.id = train_id
