@@ -66,7 +66,7 @@ class Trainer:
             self.log_output_summary(test_metrics)
 
         checkpoint = ModelCheckpoint(dirname='saved_models/', filename_prefix=self.model_id, score_function=score_function,
-                                     score_name='loss', n_saved=4, create_dir=True, save_as_state_dict=True)
+                                     score_name='acc', n_saved=4, create_dir=True, save_as_state_dict=True)
         early_stop = EarlyStopping(patience=10, score_function=score_function, trainer=self.trainer)
         self.evaluator.add_event_handler(Events.COMPLETED, early_stop)
         self.evaluator.add_event_handler(Events.EPOCH_COMPLETED, checkpoint, {'model': self.model})
