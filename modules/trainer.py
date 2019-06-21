@@ -26,8 +26,6 @@ class Trainer:
                                                      metrics={"accuracy": Accuracy(), "loss": Loss(loss_function)},
                                                      device=device, prepare_batch=prepare_batch_fn)
 
-        self.evaluator.add_event_handler(Events.EPOCH_COMPLETED, checkpoint, {'transformer': model})
-
         self.model = model
         self.device = device
         self.loss_function = loss_function
