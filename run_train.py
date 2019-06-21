@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 import random
 import numpy as np
-import torch
+from torch.nn.parallel.data_parallel import DataParallel
 
 from modules.custom_optimizers import OpenAIAdam
 from modules.log import get_logger
@@ -29,6 +29,8 @@ def run_train(args):
     model = TransformerDecoder(len(vocab), max_seq_size, args.word_dim,
                                n_blocks=args.n_blocks, n_heads=args.n_heads, dropout=args.dropout,
                                output_dim=nr_classes, eos_token=eos_vocab_index)
+
+    model = DataParallel(model)
     nr_optimizer_update = len(train_iter) * args.epochs
     optimizer = OpenAIAdam(model.parameters(), nr_optimizer_update)
     loss_function = F.cross_entropy
