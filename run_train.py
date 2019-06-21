@@ -3,6 +3,10 @@ import argparse
 
 import torch.nn.functional as F
 
+import random
+import numpy as np
+import torch
+
 from modules.custom_optimizers import OpenAIAdam
 from modules.log import get_logger
 from modules.model import TransformerDecoder
@@ -31,7 +35,7 @@ def run_train(args):
 
     logger.info(log_train_summary(args, sum(p.numel() for p in model.parameters())))
 
-    trainer = Trainer(model=model, optimizer=optimizer, loss_function=loss_function,
+    trainer = Trainer(model=model, optimizer=optimizer, loss_function=loss_function, model_id=args.id,
                       prepare_batch_fn=prepare_batch_fn, device=device, logger=logger)
     trainer.train(train_iter, val_iter, test_iter, args.epochs)
 
@@ -67,6 +71,12 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='SNLIBPE')
     parser.add_argument('--max_prem_size', type=int, default=48, help='Maximum premise length')
     parser.add_argument('--max_hyp_size', type=int, default=28, help='Maximum hypothesis length')
+
+    SEED = 42
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed_all(SEED)
 
     cmd_args = parser.parse_args()
     print(cmd_args)
