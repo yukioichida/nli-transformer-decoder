@@ -3,7 +3,6 @@
 from ignite.contrib.handlers import ProgressBar
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import Accuracy, Loss
-from modules.config import MAX_EPOCH
 
 
 class Trainer:
@@ -25,9 +24,11 @@ class Trainer:
                                                      metrics={"accuracy": Accuracy(), "loss": Loss(loss_function)},
                                                      device=device, prepare_batch=prepare_batch_fn)
         self.model = model
+        self.device = device
         self.loss_function = loss_function
         self.use_progress_bar = use_progress_bar
         self.logger = logger
+        self.prepare_batch_fn = prepare_batch_fn
 
     def train(self, train_iterator, val_iterator, test_iterator, epochs):
         if self.use_progress_bar:
@@ -38,14 +39,17 @@ class Trainer:
         def start_callback(engine):
             engine.state.best_acc = 0
 
-        @self.trainer.on(Events.EPOCH_COMPLETED)
-        def log_training_results(engine):
+        @self.trainer.on(Events.EPOCH_COMPLETED, self.model)
+        def log_training_results(engine, model):
             train_state = self.evaluator.run(train_iterator)
             val_state = self.evaluator.run(val_iterator)
             train_metrics = train_state.metrics
             val_metrics = val_state.metrics
+
             if engine.state.best_acc < val_metrics['accuracy']:
                 engine.state.best_acc = val_metrics['accuracy']
+                engine.state.best_model = model.state_dict()
+                engine.state.best_epoch = engine.state.epoch
 
             message = "Epoch: {}  Train[acc: {:.4f}, loss: {:.4f}] - Val[acc: {:.4f}, loss: {:.4f}]" \
                 .format(engine.state.epoch, train_metrics['accuracy'], train_metrics['loss'],
@@ -54,14 +58,20 @@ class Trainer:
 
         @self.trainer.on(Events.COMPLETED)
         def log_test_results(engine):
-            self.evaluator.run(test_iterator)
-            self.log_output_summary(self.evaluator.state.metrics)
+            best_model = engine.state.best_model
+            best_epoch = engine.state.best_epoch
+            self.model.load_state_dict(best_model)
+            test_evaluator = create_supervised_evaluator(self.model, metrics={"accuracy": Accuracy(),
+                                                                              "loss": Loss(self.loss_function)},
+                                                         device=self.device, prepare_batch=self.prepare_batch_fn)
+            test_evaluator.run(test_iterator)
+            self.log_output_summary(test_evaluator.state.metrics, best_epoch)
 
         self.trainer.run(train_iterator, max_epochs=epochs)
 
-    def log_output_summary(self, metrics):
-        message = """TRAINING RESULT - TEST SET
+    def log_output_summary(self, metrics, best_epoch):
+        message = """TEST SET RESULT - Using Epoch {} 
             - Avg Accuracy: {:.4f}
             - Avg Loss: {:.4f}
-        """.format(metrics['accuracy'], metrics['loss'])
+        """.format(best_epoch, metrics['accuracy'], metrics['loss'])
         self.logger.info(message)
