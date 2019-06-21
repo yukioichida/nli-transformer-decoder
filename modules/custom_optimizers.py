@@ -31,8 +31,8 @@ class OpenAIAdam(Optimizer):
     """
 
     def __init__(self, params, t_total, lr=6.25e-5, schedule='warmup_linear', warmup=0.002,
-                 b1=0.9, b2=0.999, e=1e-8, l2=0,
-                 vector_l2=False, max_grad_norm=-1, **kwargs):
+                 b1=0.9, b2=0.999, e=1e-8, l2=0.01,
+                 vector_l2=True, max_grad_norm=1, **kwargs):
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if schedule not in SCHEDULES:
