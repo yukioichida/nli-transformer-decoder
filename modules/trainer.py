@@ -66,7 +66,7 @@ class Trainer:
 
         @self.trainer.on(Events.COMPLETED)
         def log_test_results(engine):
-            test_metrics = self.evaluator.run(test_iterator)
+            test_metrics = self.val_evaluator.run(test_iterator)
             self.log_output_summary(test_metrics)
 
         checkpoint = ModelCheckpoint(dirname='saved_models/', filename_prefix=self.model_id,

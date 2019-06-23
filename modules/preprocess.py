@@ -7,6 +7,7 @@ from torchtext import datasets
 
 from modules.custom_dataset import SNLIBPEDataset
 
+
 class PreProcess:
 
     def __init__(self, device, logger, max_prem_size, max_hyp_size, batch_size):

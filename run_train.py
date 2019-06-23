@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 import argparse
-
-import torch.nn.functional as F
-
 import random
+
 import numpy as np
-from torch.nn.parallel.data_parallel import DataParallel
+import torch.nn.functional as F
 
 from modules.custom_optimizers import OpenAIAdam
 from modules.log import get_logger
@@ -18,7 +16,7 @@ def run_train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger = get_logger(args.id)
     logger.info("Start Training {} ...".format(args.id))
-    preprocess = SNLIBPEPreProcess(device, logger, args.max_prem_size, args.max_hyp_size, args.batch_size)
+    preprocess = SNLIPreProcess(device, logger, args.max_prem_size, args.max_hyp_size, args.batch_size)
     train_iter, val_iter, test_iter = preprocess.build_iterators()
     vocab = preprocess.sentence_field.vocab
     eos_vocab_index = len(vocab)
@@ -30,7 +28,6 @@ def run_train(args):
                                n_blocks=args.n_blocks, n_heads=args.n_heads, dropout=args.dropout,
                                output_dim=nr_classes, eos_token=eos_vocab_index)
 
-    model = DataParallel(model)
     nr_optimizer_update = len(train_iter) * args.epochs
     optimizer = OpenAIAdam(model.parameters(), nr_optimizer_update)
     loss_function = F.cross_entropy
