@@ -67,7 +67,7 @@ if __name__ == '__main__':
     parser.add_argument('--word_dim', type=int, default=30, help="Word dimensionality")
     parser.add_argument('--epochs', type=int, default=70, help="Number of epoch executed")
     parser.add_argument('--batch_size', type=int, default=8)
-    parser.add_argument('--dataset', type=str, default='SNLIBPE')
+    parser.add_argument('--dataset', type=str, default='SNLI')
     parser.add_argument('--max_prem_size', type=int, default=48, help='Maximum premise length')
     parser.add_argument('--max_hyp_size', type=int, default=28, help='Maximum hypothesis length')
 
