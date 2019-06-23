@@ -64,9 +64,9 @@ if __name__ == '__main__':
     parser.add_argument('--n_blocks', type=int, default=1, help="Number of transformer blocks")
     parser.add_argument('--n_heads', type=int, default=1, help="Number of attention heads used")
     parser.add_argument('--dropout', type=float, default=0.2)
-    parser.add_argument('--word_dim', type=int, default=120, help="Word dimensionality")
+    parser.add_argument('--word_dim', type=int, default=30, help="Word dimensionality")
     parser.add_argument('--epochs', type=int, default=70, help="Number of epoch executed")
-    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--dataset', type=str, default='SNLIBPE')
     parser.add_argument('--max_prem_size', type=int, default=48, help='Maximum premise length')
     parser.add_argument('--max_hyp_size', type=int, default=28, help='Maximum hypothesis length')
@@ -80,8 +80,8 @@ if __name__ == '__main__':
     cmd_args = parser.parse_args()
     print(cmd_args)
     train_id = '{}-{}blk-{}h-{}d-{}batch'.format(cmd_args.dataset, cmd_args.n_blocks, cmd_args.n_heads,
-                                         cmd_args.word_dim, cmd_args.batch_size)
+                                                 cmd_args.word_dim, cmd_args.batch_size)
     if cmd_args.id:
-        train_id = train_id + '-' + cmd_args.id
+        train_id = cmd_args.id + '-' + train_id
     cmd_args.id = train_id
     run_train(cmd_args)
