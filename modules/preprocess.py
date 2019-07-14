@@ -149,4 +149,15 @@ class ContractPreProcess(PreProcess):
         tensor_norm1, norm1_size = self.sentence_field.process([norm1.split()], device)
         tensor_norm2, norm2_size = self.sentence_field.process([norm2.split()], device)
         eos_tensor = torch.tensor([eos_index], device=device)
-        return torch.cat([tensor_norm1[0], tensor_norm2[0], eos_tensor])
+
+        max_seq_len = norm1_size.item() + norm2_size.item() + 1
+        first_idx = eos_index + 1
+        last_idx = max_seq_len + first_idx
+
+        new_shape = (max_seq_len, 2)
+        formatted_batch = torch.zeros(new_shape, dtype=torch.int64, device=self.device)
+
+        formatted_batch[:, 0] = torch.cat([tensor_norm1[0], tensor_norm2[0], eos_tensor])
+        formatted_batch[:, 1] = torch.arange(first_idx, last_idx, device=self.device)
+
+        return formatted_batch
