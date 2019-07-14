@@ -6,7 +6,7 @@ from modules.preprocess import SNLIPreProcess, ContractPreProcess
 from modules.log import get_logger
 from modules.model import TransformerDecoder
 
-BASE_PATH = "../.data/contract-datasets/"
+BASE_PATH = ".data/contract-datasets/"
 CONTRACT_DATASET_FILE = BASE_PATH + "all_contracts.tsv"
 
 df_contract: DataFrame = pd.read_csv(CONTRACT_DATASET_FILE, sep='\t')
@@ -14,13 +14,13 @@ df_contract: DataFrame = pd.read_csv(CONTRACT_DATASET_FILE, sep='\t')
 BATCH_SIZE = 32
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-logger = get_logger('contract_analysis', '../')
+logger = get_logger('contract_analysis', '.')
 
-preprocess = SNLIPreProcess(device, logger, 48, 28, BATCH_SIZE, base_path='../.data')
+preprocess = SNLIPreProcess(device, logger, 48, 28, BATCH_SIZE, base_path='.data')
 preprocess.build_vocab()
 train_vocab = preprocess.sentence_field.vocab
 
-contract_preprocess = ContractPreProcess(device, logger, 48, 28, BATCH_SIZE, base_path='../.data')
+contract_preprocess = ContractPreProcess(device, logger, 48, 28, BATCH_SIZE, base_path='.data')
 contract_preprocess.load_pretrained_vocab(train_vocab)
 contract_vocab = contract_preprocess.sentence_field.vocab
 
