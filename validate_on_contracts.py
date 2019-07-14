@@ -12,17 +12,19 @@ print(os.getcwd())
 BASE_PATH = ".data/contract-datasets/"
 CONTRACT_DATASET_FILE = BASE_PATH + "all_contracts.tsv"
 
-df_contract = pd.read_csv(CONTRACT_DATASET_FILE, sep='\t')
-
 BATCH_SIZE = 32
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logger = get_logger('contract_analysis')
 
+logger.info('loading norm dataset')
+df_contract = pd.read_csv(CONTRACT_DATASET_FILE, sep='\t')
+
+logger.info('loading vocabulary...')
 preprocess = SNLIPreProcess(device, logger, 48, 28, BATCH_SIZE, base_path='.data')
 preprocess.build_vocab()
 train_vocab = preprocess.sentence_field.vocab
-
+logger.info('setup norm dataset')
 contract_preprocess = ContractPreProcess(device, logger, 48, 28, BATCH_SIZE, base_path='.data')
 contract_preprocess.load_pretrained_vocab(train_vocab)
 contract_vocab = contract_preprocess.sentence_field.vocab
@@ -44,6 +46,7 @@ norm2 = "although is hard, i will not surrender"
 tensor = contract_preprocess.prepare_model_input(norm1, norm2, eos_index=eos_vocab_index, device=device)
 print("Tensor: " + str(tensor))
 
+logger.info('loading model...')
 model = TransformerDecoder(vocab_size=vocab_size, max_seq_length=max_seq_size,
                            word_embedding_dim=120, n_heads=12, n_blocks=12,
                            output_dim=n_classes, eos_token=eos_vocab_index)
