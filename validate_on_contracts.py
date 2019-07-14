@@ -9,7 +9,7 @@ from modules.model import TransformerDecoder
 BASE_PATH = ".data/contract-datasets/"
 CONTRACT_DATASET_FILE = BASE_PATH + "all_contracts.tsv"
 
-df_contract: DataFrame = pd.read_csv(CONTRACT_DATASET_FILE, sep='\t')
+df_contract = pd.read_csv(CONTRACT_DATASET_FILE, sep='\t')
 
 BATCH_SIZE = 32
 
@@ -28,7 +28,7 @@ test_iter = contract_preprocess.build_iterators(build_vocab=False)
 
 # Predicting NLI classes for norms
 
-PRETRAINED_WEIGHTS = "../saved_models/id-SNLI-12blk-12h-120d-8batch_model_52_acc=0.7919122.pth"
+PRETRAINED_WEIGHTS = "saved_models/id-SNLI-12blk-12h-120d-8batch_model_52_acc=0.7919122.pth"
 
 vocab_size = len(train_vocab)
 max_seq_size = 48 + 28 + 1
