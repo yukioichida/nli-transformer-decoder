@@ -14,7 +14,7 @@ df_contract = pd.read_csv(CONTRACT_DATASET_FILE, sep='\t')
 BATCH_SIZE = 32
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-logger = get_logger('contract_analysis', '.')
+logger = get_logger('contract_analysis')
 
 preprocess = SNLIPreProcess(device, logger, 48, 28, BATCH_SIZE, base_path='.data')
 preprocess.build_vocab()
