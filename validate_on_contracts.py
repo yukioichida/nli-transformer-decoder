@@ -48,7 +48,7 @@ model = TransformerDecoder(vocab_size=vocab_size, max_seq_length=max_seq_size,
                            word_embedding_dim=120, n_heads=12, n_blocks=12,
                            output_dim=n_classes, eos_token=eos_vocab_index)
 model.load_state_dict(torch.load(PRETRAINED_WEIGHTS))
-
+model = model.to(device)
 model.eval()
 
 predict = model(tensor)
