@@ -59,25 +59,27 @@ class SNLIPreProcess(PreProcess):
         premise = batch.premise
         hypothesis = batch.hypothesis
         # get the size of sentences to retrieve the longest sequence of batch
-        max_premise_size = min(torch.max(premise[1]).item(), self.max_prem_size)
-        max_hyp_size = min(torch.max(hypothesis[1]).item(), self.max_hyp_size)
+        max_premise_size = torch.max(premise[1]).item()
+        max_hyp_size = torch.max(hypothesis[1]).item()
+        prem_seq_sizes = premise[1].tolist()
+        hyp_seq_sizes = hypothesis[1].tolist()
 
         max_seq_len = max_premise_size + max_hyp_size + 1  # including separator and eos token
         # special token (end of sequence) that will contain all the prem-hyp information
         eos = len(self.sentence_field.vocab)
         # Positional encoding index regarding the relative position
-        first_idx = eos + 1
-        last_idx = max_seq_len + first_idx
         new_shape = (batch.batch_size, max_seq_len, 2)
 
         formatted_batch = torch.zeros(new_shape, dtype=torch.int64, device=self.device)
+        first_idx = eos + 1
         for idx in range(0, batch.batch_size):
             # [premise] + [hypothesis] + [eos token] TODO: test using another special token for prem-hyp separator
-            formatted_seq = torch.cat((premise[0][idx][:max_premise_size],
-                                       hypothesis[0][idx][:max_hyp_size],
+            total_length = prem_seq_sizes[idx] + hyp_seq_sizes[idx] + 1
+            formatted_seq = torch.cat((premise[0][idx][:prem_seq_sizes[idx]],
+                                       hypothesis[0][idx][:hyp_seq_sizes[idx]],
                                        torch.tensor([eos], device=self.device)))
-            formatted_batch[idx, :, 0] = formatted_seq  # Word indexes
-            formatted_batch[idx, :, 1] = torch.arange(first_idx, last_idx, device=self.device)  # Positional indexes
+            formatted_batch[idx, :total_length, 0] = formatted_seq  # Word indexes
+            formatted_batch[idx, :total_length, 1] = torch.arange(first_idx, first_idx+total_length, device=self.device)  # Positional indexes
         return formatted_batch, batch.label.long()
 
 
