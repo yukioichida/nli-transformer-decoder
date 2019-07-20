@@ -71,17 +71,20 @@ model.eval()
     # new_dataframe['conflict'] = conflict
     # new_dataframe['relation'] = pred_class
 
-for index, row in df_contract.iterrows():
-    norm1 = df_contract.iloc[index]['norm1']
-    norm2 = df_contract.iloc[index]['norm2']
+def predict_on_norms(norm1, norm2):
     tensor = contract_preprocess.prepare_model_input(norm1[:48], norm2[:28], eos_index=eos_vocab_index, device=device)
     predict = model(tensor)
     index = torch.argmax(predict).cpu().item()
-    pred_class = label_vocab.itos[index]
-    print(pred_class)
-    df_contract.at[index, 'result'] = pred_class
+    return label_vocab.itos[index]
 
-df_contract.to_csv('.data/results/result.tsv', sep='\t', index=False)
+def write_results():
+    for index, row in df_contract.iterrows():
+        norm1 = df_contract.iloc[index]['norm1']
+        norm2 = df_contract.iloc[index]['norm2']
+        df_contract.at[index, 'result'] = predict_on_norms(norm1, norm2, model)
+    df_contract.to_csv('.data/results/result.tsv', sep='\t', index=False)
+
+write_results()
 
 #index = torch.argmax(predict)
 #pred_class = label_vocab.itos[index.item()]
