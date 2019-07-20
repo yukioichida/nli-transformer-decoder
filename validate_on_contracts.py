@@ -81,7 +81,7 @@ def write_results():
     for index, row in df_contract.iterrows():
         norm1 = df_contract.iloc[index]['norm1']
         norm2 = df_contract.iloc[index]['norm2']
-        df_contract.at[index, 'result'] = predict_on_norms(norm1, norm2, model)
+        df_contract.at[index, 'result'] = predict_on_norms(norm1, norm2)
     df_contract.to_csv('.data/results/result.tsv', sep='\t', index=False)
 
 write_results()
