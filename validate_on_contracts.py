@@ -43,13 +43,13 @@ test_iter = contract_preprocess.build_iterators(build_vocab=False)
 PRETRAINED_WEIGHTS = "saved_models/id-SNLI-12blk-12h-120d-8batch_model_52_acc=0.7919122.pth"
 
 vocab_size = len(train_vocab)
-max_seq_size = 48 + 28 + 1
+max_seq_size = 77
 eos_vocab_index = vocab_size
 n_classes = len(preprocess.label_field.vocab)
 
-norm1 = "this is insane"
-norm2 = "although is hard, i will not surrender"
-print("Tensor: " + str(tensor))
+#norm1 = "this is insane"
+#norm2 = "although is hard, i will not surrender"
+#print("Tensor: " + str(tensor))
 
 logger.info('loading model...')
 model = TransformerDecoder(vocab_size=vocab_size, max_seq_length=max_seq_size,
@@ -74,13 +74,14 @@ model.eval()
 for index, row in df_contract.iterrows():
     norm1 = df_contract.iloc[index]['norm1']
     norm2 = df_contract.iloc[index]['norm2']
-    tensor = contract_preprocess.prepare_model_input(norm1, norm2, eos_index=eos_vocab_index, device=device)
+    tensor = contract_preprocess.prepare_model_input(norm1[:48], norm2[:28], eos_index=eos_vocab_index, device=device)
     predict = model(tensor)
-    index = torch.argmax(predict)
-    pred_class = label_vocab.itos[index.item()]
+    index = torch.argmax(predict).cpu().item()
+    pred_class = label_vocab.itos[index]
+    print(pred_class)
     df_contract.at[index, 'result'] = pred_class
 
-df_contract.to_csv('.data/results/result.tsv', sep='\t')
+df_contract.to_csv('.data/results/result.tsv', sep='\t', index=False)
 
 #index = torch.argmax(predict)
 #pred_class = label_vocab.itos[index.item()]
