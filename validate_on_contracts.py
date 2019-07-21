@@ -1,5 +1,6 @@
 import pandas as pd
 import torch
+from torch.nn import LogSoftmax
 from pandas import DataFrame
 
 from modules.preprocess import SNLIPreProcess, ContractPreProcess
@@ -70,18 +71,26 @@ model.eval()
     # new_dataframe['norm2'] = norm2
     # new_dataframe['conflict'] = conflict
     # new_dataframe['relation'] = pred_class
-
+softmax = LogSoftmax(dim=-1)
 def predict_on_norms(norm1, norm2):
     tensor = contract_preprocess.prepare_model_input(norm1[:48], norm2[:28], eos_index=eos_vocab_index, device=device)
+    tensor = softmax(tensor)
     predict = model(tensor)
     index = torch.argmax(predict).cpu().item()
-    return label_vocab.itos[index]
+    return label_vocab.itos[index], predict.item()
 
 def write_results():
+    entailment_index = label_vocab.stoi['entailment']
+    contradiction_index = label_vocab.stoi['contradiction']
+    neutral_index = label_vocab.stoi['neutral']
     for index, row in df_contract.iterrows():
         norm1 = df_contract.iloc[index]['norm1']
         norm2 = df_contract.iloc[index]['norm2']
-        df_contract.at[index, 'result'] = predict_on_norms(norm1, norm2)
+        majority_class, probabilities = predict_on_norms(norm1, norm2)
+        df_contract.at[index, 'majority_class'] = majority_class
+        df_contract.at[index, 'entailment_prob'] = probabilities[entailment_index]
+        df_contract.at[index, 'contradiction_prob'] = probabilities[contradiction_index]
+        df_contract.at[index, 'neutral_prob'] = probabilities[neutral_index]
     df_contract.to_csv('.data/results/result.tsv', sep='\t', index=False)
 
 write_results()
