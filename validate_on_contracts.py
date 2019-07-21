@@ -74,8 +74,8 @@ model.eval()
 softmax = LogSoftmax(dim=-1)
 def predict_on_norms(norm1, norm2):
     tensor = contract_preprocess.prepare_model_input(norm1[:48], norm2[:28], eos_index=eos_vocab_index, device=device)
-    tensor = softmax(tensor)
     predict = model(tensor)
+    predict = softmax(predict)
     index = torch.argmax(predict).cpu().item()
     return label_vocab.itos[index], predict.item()
 
