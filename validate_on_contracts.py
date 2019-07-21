@@ -91,7 +91,7 @@ def write_results():
         df_contract.at[index, 'entailment_prob'] = probabilities[entailment_index]
         df_contract.at[index, 'contradiction_prob'] = probabilities[contradiction_index]
         df_contract.at[index, 'neutral_prob'] = probabilities[neutral_index]
-    df_contract.to_csv('.data/results/result.tsv', sep='\t', index=False)
+    df_contract.to_csv('result.tsv', sep='\t', index=False)
 
 write_results()
 
