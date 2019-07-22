@@ -148,6 +148,7 @@ class TransformerDecoder(nn.Module):
         # Token used to represent the entire sentence
         self.eos_token = eos_token
 
+        nn.init.normal_(self.embeddings.weight, std=0.02)
         nn.init.normal_(self.output_layer.weight, std=0.02)
         nn.init.normal_(self.output_layer.bias, 0)
 
