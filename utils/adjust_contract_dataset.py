@@ -7,7 +7,7 @@ CONTRACT_NONCONFLICT_FILE = BASE_PATH + "non_conflicts.csv"
 ALL_CONTRACT_FILE = BASE_PATH + "all_contracts.tsv"
 NON_CONFLICT_TYPE = 5
 
-APPEND_NONCONFLICTS = False
+APPEND_NONCONFLICTS = True
 
 df_conflicts = pd.read_csv(CONTRACT_CONFLICT_FILE)
 df_nonconflicts = pd.read_csv(CONTRACT_NONCONFLICT_FILE)
