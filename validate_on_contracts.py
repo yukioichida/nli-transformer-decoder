@@ -1,6 +1,6 @@
 import pandas as pd
 import torch
-from torch.nn import LogSoftmax
+from torch.nn import Softmax
 from pandas import DataFrame
 
 from modules.preprocess import SNLIPreProcess, ContractPreProcess
@@ -71,7 +71,7 @@ model.eval()
     # new_dataframe['norm2'] = norm2
     # new_dataframe['conflict'] = conflict
     # new_dataframe['relation'] = pred_class
-softmax = LogSoftmax(dim=-1)
+softmax = Softmax(dim=-1)
 def predict_on_norms(norm1, norm2):
     tensor = contract_preprocess.prepare_model_input(norm1[:48], norm2[:28], eos_index=eos_vocab_index, device=device)
     predict = model(tensor)
