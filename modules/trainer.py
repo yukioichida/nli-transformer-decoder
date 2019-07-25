@@ -48,10 +48,6 @@ class Trainer:
         def score_function(engine):
             return engine.state.metrics['accuracy']
 
-        @self.trainer.on(Events.STARTED)
-        def start_callback(engine):
-            engine.state.best_acc = 0
-
         @self.trainer.on(Events.EPOCH_COMPLETED)
         def log_training_results(engine):
             train_state = self.train_evaluator.run(train_iterator)
@@ -77,9 +73,9 @@ class Trainer:
         self.val_evaluator.add_event_handler(Events.EPOCH_COMPLETED, checkpoint, {'model': self.model})
         self.trainer.run(train_iterator, max_epochs=epochs)
 
-    def log_output_summary(self, metrics, best_epoch):
-        message = """TEST SET RESULT - Using Epoch {} 
+    def log_output_summary(self, metrics):
+        message = """TEST SET RESULT 
             - Avg Accuracy: {:.4f}
             - Avg Loss: {:.4f}
-        """.format(best_epoch, metrics['accuracy'], metrics['loss'])
+        """.format(metrics['accuracy'], metrics['loss'])
         self.logger.info(message)
