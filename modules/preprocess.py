@@ -10,8 +10,7 @@ from modules.custom_dataset import SNLIBPEDataset, ContractDataset
 
 class PreProcess:
 
-
-    def __init__(self, device, logger, batch_size):
+    def __init__(self, device, logger, batch_size, base_path='.data'):
         self.device = device
         self.logger = logger
         self.batch_size = batch_size
@@ -69,12 +68,12 @@ class SNLIPreProcess(PreProcess):
         premise = batch.premise
         hypothesis = batch.hypothesis
         # get the size of sentences to retrieve the longest sequence of batch
-        #max_premise_size = torch.max(premise[1]).item()
-        #max_hyp_size = torch.max(hypothesis[1]).item()
+        # max_premise_size = torch.max(premise[1]).item()
+        # max_hyp_size = torch.max(hypothesis[1]).item()
         max_premise_size = premise[0].size(-1)
         max_hyp_size = hypothesis[0].size(-1)
-        #prem_seq_sizes = premise[1].tolist()
-        #hyp_seq_sizes = hypothesis[1].tolist()
+        # prem_seq_sizes = premise[1].tolist()
+        # hyp_seq_sizes = hypothesis[1].tolist()
 
         max_seq_len = max_premise_size + max_hyp_size + 1  # including separator and eos token
         # special token (end of sequence) that will contain all the prem-hyp information
@@ -86,20 +85,21 @@ class SNLIPreProcess(PreProcess):
         first_idx = eos + 1
         for idx in range(0, batch.batch_size):
             # [premise] + [hypothesis] + [eos token] TODO: test using another special token for prem-hyp separator
-            #total_length = prem_seq_sizes[idx] + hyp_seq_sizes[idx] + 1
+            # total_length = prem_seq_sizes[idx] + hyp_seq_sizes[idx] + 1
             total_length = premise[1][idx] + hypothesis[1][idx] + 1
             formatted_seq = torch.cat((premise[0][idx][:premise[1][idx]],
                                        hypothesis[0][idx][:hypothesis[1][idx]],
                                        torch.tensor([eos], device=self.device)))
             formatted_batch[idx, :total_length, 0] = formatted_seq  # Word indexes
-            formatted_batch[idx, :total_length, 1] = torch.arange(first_idx, first_idx+total_length, device=self.device)  # Positional indexes
+            formatted_batch[idx, :total_length, 1] = torch.arange(first_idx, first_idx + total_length,
+                                                                  device=self.device)  # Positional indexes
         return formatted_batch, batch.label.long()
 
-      
+
 class ContractPreProcess(PreProcess):
 
-    def __init__(self, device, logger, max_prem_size, max_hyp_size, batch_size, base_path='.data'):
-        super().__init__(device, logger, max_prem_size, max_hyp_size, batch_size, base_path)
+    def __init__(self, device, logger, batch_size, base_path='.data'):
+        super().__init__(device, logger, batch_size, base_path)
 
     def load_pretrained_vocab(self, vocab):
         self.sentence_field.vocab = vocab

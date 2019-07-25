@@ -117,7 +117,7 @@ class DecoderBlock(nn.Module):
         super(DecoderBlock, self).__init__()
         self.attention = Attention(word_dim, seq_len, n_heads, dropout)
         self.layerNorm1 = nn.LayerNorm(word_dim)
-        self.ff = PositionWiseFF(word_dim, word_dim * 4, dropout)
+        self.ff = PositionWiseFF(word_dim, word_dim * 3, dropout)
         self.layerNorm2 = nn.LayerNorm(word_dim)
 
     def forward(self, x):

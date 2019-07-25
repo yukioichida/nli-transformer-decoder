@@ -1,29 +1,27 @@
+#!/usr/bin/env python3
 import pandas as pd
 import torch
 from torch.nn import Softmax
-from pandas import DataFrame
+from tqdm import tqdm
 
-from modules.preprocess import SNLIPreProcess, ContractPreProcess
 from modules.log import get_logger
 from modules.model import TransformerDecoder
-import os
-
-print(os.path.dirname(os.path.dirname(__file__)))
-print(os.getcwd())
+from modules.preprocess import SNLIPreProcess, ContractPreProcess
 
 BASE_PATH = ".data/contract-datasets/"
 CONTRACT_DATASET_FILE = BASE_PATH + "all_contracts.tsv"
-
 BATCH_SIZE = 32
+MAX_SEQ_SIZE = 360
+# Predicting NLI classes for norms
+PRETRAINED_WEIGHTS = "saved_models/SNLI-12blk-12h-240d-16batch_model_12_acc=0.8134526.pth"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logger = get_logger('contract_analysis')
-
 logger.info('loading norm dataset')
 df_contract = pd.read_csv(CONTRACT_DATASET_FILE, sep='\t')
 
 logger.info('loading vocabulary...')
-preprocess = SNLIPreProcess(device, logger, 48, 28, BATCH_SIZE, base_path='.data')
+preprocess = SNLIPreProcess(device, logger, BATCH_SIZE)
 preprocess.build_vocab()
 train_vocab = preprocess.sentence_field.vocab
 
@@ -33,57 +31,38 @@ for k, v in label_vocab.stoi.items():
     class_vocab.append('{}: {}'.format(k, v))
 logger.info('class vocabulary: {}'.format('|'.join(class_vocab)))
 logger.info('setup norm dataset')
-
-contract_preprocess = ContractPreProcess(device, logger, 48, 28, BATCH_SIZE, base_path='.data')
+contract_preprocess = ContractPreProcess(device, logger, BATCH_SIZE)
 contract_preprocess.load_pretrained_vocab(train_vocab)
 contract_vocab = contract_preprocess.sentence_field.vocab
-
 test_iter = contract_preprocess.build_iterators(build_vocab=False)
 
-# Predicting NLI classes for norms
-PRETRAINED_WEIGHTS = "saved_models/id-SNLI-12blk-12h-120d-8batch_model_52_acc=0.7919122.pth"
-
 vocab_size = len(train_vocab)
-max_seq_size = 77
 eos_vocab_index = vocab_size
 n_classes = len(preprocess.label_field.vocab)
 
-#norm1 = "this is insane"
-#norm2 = "although is hard, i will not surrender"
-#print("Tensor: " + str(tensor))
-
 logger.info('loading model...')
-model = TransformerDecoder(vocab_size=vocab_size, max_seq_length=max_seq_size,
-                           word_embedding_dim=120, n_heads=12, n_blocks=12,
-                           output_dim=n_classes, eos_token=eos_vocab_index)
+model = TransformerDecoder(vocab_size=vocab_size, max_seq_length=MAX_SEQ_SIZE, word_embedding_dim=240, n_heads=12,
+                           n_blocks=12, output_dim=n_classes, eos_token=eos_vocab_index)
 model.load_state_dict(torch.load(PRETRAINED_WEIGHTS))
 model = model.to(device)
 model.eval()
-
-
-
-# for each row in dataframe of all contracts
-    # tensor = contract_preprocess.prepare_model_input(norm1, norm2, eos_index=eos_vocab_index, device=device)
-    # predict = model(tensor)
-    #index = torch.argmax(predict)
-    #pred_class = label_vocab.itos[index.item()]
-    # new_dataframe['norm1'] = norm1
-    # new_dataframe['norm2'] = norm2
-    # new_dataframe['conflict'] = conflict
-    # new_dataframe['relation'] = pred_class
 softmax = Softmax(dim=-1)
-def predict_on_norms(norm1, norm2):
-    tensor = contract_preprocess.prepare_model_input(norm1[:48], norm2[:28], eos_index=eos_vocab_index, device=device)
+
+
+def predict_on_norms(premise, hypothesis):
+    tensor = contract_preprocess.prepare_model_input(premise[:179], hypothesis[:179], eos_index=eos_vocab_index,
+                                                     device=device)
     predict = model(tensor)
     predict = softmax(predict)
     index = torch.argmax(predict).tolist()
     return label_vocab.itos[index], predict.tolist()[0]
 
+
 def write_results():
     entailment_index = label_vocab.stoi['entailment']
     contradiction_index = label_vocab.stoi['contradiction']
     neutral_index = label_vocab.stoi['neutral']
-    for index, row in df_contract.iterrows():
+    for index, row in tqdm(df_contract.iterrows()):
         norm1 = df_contract.iloc[index]['norm1']
         norm2 = df_contract.iloc[index]['norm2']
         majority_class, probabilities = predict_on_norms(norm1, norm2)
@@ -91,11 +70,14 @@ def write_results():
         df_contract.at[index, 'entailment_prob'] = probabilities[entailment_index]
         df_contract.at[index, 'contradiction_prob'] = probabilities[contradiction_index]
         df_contract.at[index, 'neutral_prob'] = probabilities[neutral_index]
+        # Reverse mode: norm2->norm1
+        rev_majority_class, rev_probabilities = predict_on_norms(norm2, norm1)
+        df_contract.at[index, 'rev_majority_class'] = rev_majority_class
+        df_contract.at[index, 'rev_entailment_prob'] = rev_probabilities[entailment_index]
+        df_contract.at[index, 'rev_contradiction_prob'] = rev_probabilities[contradiction_index]
+        df_contract.at[index, 'rev_neutral_prob'] = rev_probabilities[neutral_index]
+        df_contract.at[index, 'conf_type'] = df_contract.iloc[index]['conf_type']
     df_contract.to_csv('result.tsv', sep='\t', index=False)
 
+
 write_results()
-
-#index = torch.argmax(predict)
-#pred_class = label_vocab.itos[index.item()]
-
-#logger.info("output tensor: {} - Value predicted: {} - Class predicted".format(predict, index, pred_class))
