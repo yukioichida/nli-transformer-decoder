@@ -49,6 +49,9 @@ class Attention(nn.Module):
         self.attn_output_layer = nn.Linear(word_dim, word_dim)
         self.output_dropout = nn.Dropout(dropout)
 
+        nn.init.normal_(self.linear.weight, std=0.02)
+        nn.init.normal_(self.attn_output_layer.weight, std=0.02)
+
     def split_heads(self, x, permute=False):
         """
             Creates a new axis for attention heads
@@ -148,6 +151,7 @@ class TransformerDecoder(nn.Module):
         # Token used to represent the entire sentence
         self.eos_token = eos_token
 
+        nn.init.normal_(self.embeddings.weight, std=0.02)
         nn.init.normal_(self.output_layer.weight, std=0.02)
         nn.init.normal_(self.output_layer.bias, 0)
 

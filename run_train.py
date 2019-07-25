@@ -14,16 +14,17 @@ from modules.trainer import Trainer
 
 def run_train(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cpu")
     logger = get_logger(args.id)
     logger.info("Start Training {} ...".format(args.id))
-    preprocess = SNLIPreProcess(device, logger, args.max_prem_size, args.max_hyp_size, args.batch_size)
+    preprocess = SNLIPreProcess(device, logger, args.batch_size)
     train_iter, val_iter, test_iter = preprocess.build_iterators()
     vocab = preprocess.sentence_field.vocab
     eos_vocab_index = len(vocab)
     nr_classes = len(preprocess.label_field.vocab)
     # Function that prepares the input batch for the model train
     prepare_batch_fn = preprocess.include_positional_encoding
-    max_seq_size = args.max_prem_size + args.max_hyp_size + 1
+    max_seq_size = args.seq_len
     model = TransformerDecoder(len(vocab), max_seq_size, args.word_dim,
                                n_blocks=args.n_blocks, n_heads=args.n_heads, dropout=args.dropout,
                                output_dim=nr_classes, eos_token=eos_vocab_index)
@@ -46,7 +47,7 @@ def log_train_summary(args, parameters):
     """
 
     return """ 
-        Max Premise/Hypothesis Size: {}/{}
+        Sequence Length: {}
         Batch Size: {}
         Epochs: {}
         Decoder Blocks: {}
@@ -54,22 +55,21 @@ def log_train_summary(args, parameters):
         Word Dimension (model dimension): {}
         Model Dropout: {}
         Model Parameters: {}
-    """.format(args.max_prem_size, args.max_hyp_size, args.batch_size, args.epochs, args.n_blocks,
+    """.format(args.seq_len, args.batch_size, args.epochs, args.n_blocks,
                args.n_heads, args.word_dim, args.dropout, parameters)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--id', type=str, help="Training identifier")
-    parser.add_argument('--n_blocks', type=int, default=1, help="Number of transformer blocks")
-    parser.add_argument('--n_heads', type=int, default=1, help="Number of attention heads used")
+    parser.add_argument('--n_blocks', type=int, default=12, help="Number of transformer blocks")
+    parser.add_argument('--n_heads', type=int, default=12, help="Number of attention heads used")
     parser.add_argument('--dropout', type=float, default=0.2)
-    parser.add_argument('--word_dim', type=int, default=30, help="Word dimensionality")
+    parser.add_argument('--word_dim', type=int, default=240, help="Word dimensionality")
     parser.add_argument('--epochs', type=int, default=70, help="Number of epoch executed")
-    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--dataset', type=str, default='SNLI')
-    parser.add_argument('--max_prem_size', type=int, default=48, help='Maximum premise length')
-    parser.add_argument('--max_hyp_size', type=int, default=28, help='Maximum hypothesis length')
+    parser.add_argument('--seq_len', type=int, default=360, help='Sequence length')
 
     SEED = 42
     random.seed(SEED)
